@@ -1,16 +1,9 @@
 # wins
 
-A new Flutter project.
+This project is a Flutter-based mobile application designed to help users capture and reflect on their personal wins throughout the year. A “win” can be any positive moment, achievement, or progress, big or small.
 
-## Getting Started
+The app focuses on speed and simplicity. Users can quickly add wins either by typing or by using voice dictation, which converts speech to text. Each entry is automatically timestamped and stored locally, allowing the app to function fully offline.
 
-This project is a starting point for a Flutter application.
+The interface is intentionally minimal and calming, encouraging reflection rather than productivity pressure. There are no accounts, no cloud dependency, and no unnecessary friction in the core experience.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+This project is built as an MVP-first application, with a clean architecture that allows for future expansion such as tagging, summaries, favorites, and optional cloud sync.
