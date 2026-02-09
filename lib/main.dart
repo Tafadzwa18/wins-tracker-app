@@ -1,10 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:wins/reminders_page.dart';
 import 'package:wins/win_timeline.dart';
-import 'add_win_page.dart';
 
-void main() {
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+void main() async {
   // Ensure Flutter bindings are initialized before database work
   WidgetsFlutterBinding.ensureInitialized();
+  tz. initializeTimeZones();
+
+  // 2. Android/iOS Settings
+  const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings();
+
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsIOS,
+  );
+
+await flutterLocalNotificationsPlugin.initialize(
+  settings: initializationSettings, 
+  onDidReceiveNotificationResponse: (NotificationResponse details) {
+
+    debugPrint("Notification tapped!");
+  },
+);
+
   runApp(const PersonalWinsApp());
 }
 
@@ -17,21 +41,27 @@ class PersonalWinsApp extends StatelessWidget {
       title: 'Wins App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // Defining our "Calm & Positive" palette
-        scaffoldBackgroundColor: const Color(0xFFFAFAF8),
-        primaryColor: const Color(0xFF6B8E23),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6B8E23),
-          primary: const Color(0xFF6B8E23),
-          secondary: const Color(0xFF8DA45C),
-        ),
-        // Applying a clean, lightweight font style
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(color: Colors.black87, fontWeight: FontWeight.w300),
-          bodyLarge: TextStyle(color: Colors.black12, fontSize: 16),
-        ),
-        useMaterial3: true,
+      useMaterial3: true,
+      textTheme: GoogleFonts.plusJakartaSansTextTheme(),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF13EC5B),
+        primary: const Color(0xFF13EC5B),
+        surface: const Color(0xFFF6F8F6),
+        onSurface: const Color(0xFF0D1B12),
       ),
+      scaffoldBackgroundColor: const Color(0xFFF6F8F6),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF13EC5B),
+          foregroundColor: Colors.black,
+          minimumSize: const Size(double.infinity, 64),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 0,
+          textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+        ),
+      ),
+    ),
+
       home: const MainNavigation(),
     );
   }
@@ -50,7 +80,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _screens = [
     WinTimelineScreen(),
-    AddWinPage(),
+    RemindersPage(),
   ];
 
   @override
@@ -71,9 +101,9 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'Timeline',
           ),
           NavigationDestination(
-            icon: Icon(Icons.add_circle_outline),
-            selectedIcon: Icon(Icons.add_circle),
-            label: 'New Win',
+            icon: Icon(Icons.notification_add_outlined),
+            selectedIcon: Icon(Icons.notification_add_rounded),
+            label: 'Settings',
           ),
         ],
         backgroundColor: Colors.white,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:wins/database_helper.dart';
+import 'database_helper.dart';
 
 class AddWinPage extends StatefulWidget {
   const AddWinPage({super.key});
@@ -13,9 +13,20 @@ class _AddWinPageState extends State<AddWinPage> {
   final TextEditingController _controller = TextEditingController();
   late stt.SpeechToText _speech;
   bool _isListening = false;
-  final List<String> _categories = ['General', 'Work', 'Health', 'Learning', 'Social', 'Personal'];
   String _selectedTag = 'General';
-  String _captureType ='text';
+
+  // Design System Colors
+  final Color primaryNeon = const Color(0xFF13EC5B);
+  final Color darkBg = const Color(0xFF102216);
+  final Color lightSurface = const Color(0xFFFFFFFF);
+
+  final List<String> _tags = [
+    'General',
+    'Work',
+    'Health',
+    'Learning',
+    'Social',
+  ];
 
   @override
   void initState() {
@@ -23,22 +34,17 @@ class _AddWinPageState extends State<AddWinPage> {
     _speech = stt.SpeechToText();
   }
 
- // Voice Dictation Logic
- void _listen() async {
+  void _listen() async {
     if (!_isListening) {
-      bool available = await _speech.initialize(
-        onStatus: (val) => print('onStatus: $val'),
-        onError: (val) => print('onError: $val'),
-      );
+      bool available = await _speech.initialize();
       if (available) {
-        setState(() {
-          _isListening = true;
-          _captureType = 'voice'; // Mark this as a voice entry
-        });
+        setState(() => _isListening = true);
         _speech.listen(
-          onResult: (val) => setState(() {
-            _controller.text = val.recognizedWords;
-          }),
+          onResult: (val) {
+            setState(() {
+              _controller.text = val.recognizedWords;
+            });
+          },
         );
       }
     } else {
@@ -47,106 +53,179 @@ class _AddWinPageState extends State<AddWinPage> {
     }
   }
 
-  void _handleSave() async {
+  void _saveWin() async {
     if (_controller.text.isEmpty) return;
 
-    Map<String, dynamic> row = {
+    await DatabaseHelper.instance.insertWin({
       'content': _controller.text,
       'timestamp': DateTime.now().toIso8601String(),
-      'type': _captureType, 
+      'type': 'text',
       'tag': _selectedTag,
       'isFavorite': 0,
-    };
+    });
 
-    await DatabaseHelper.instance.insertWin(row);
-
-    _controller.clear();
-    setState((){
-      _captureType = 'text';
-      _selectedTag = 'General';
-    }); // Reset for next entry
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Win recorded! ✨"), backgroundColor: Color(0xFF6B8E23)),
-    );
+    if (mounted) Navigator.pop(context);
   }
 
-Widget _buildTagSelector() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text("Category", style: TextStyle(color: Colors.grey, fontSize: 14)),
-      const SizedBox(height: 10),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: _categories.map((tag) {
-            bool isSelected = _selectedTag == tag;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: ChoiceChip(
-                label: Text(tag),
-                selected: isSelected,
-                onSelected: (selected) {
-                  setState(() => _selectedTag = tag);
-                },
-                selectedColor: const Color(0xFF6B8E23).withOpacity(0.2),
-                checkmarkColor: const Color(0xFF6B8E23),
-                labelStyle: TextStyle(
-                  color: isSelected ? const Color(0xFF6B8E23) : Colors.black54,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(
-                    color: isSelected ? const Color(0xFF6B8E23) : Colors.grey.shade300,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    ],
-  );
-}
-
-@override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(30.0),
+      backgroundColor: const Color(0xFFF6F8F6),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Color(0xFF0D1B12)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "New Win",
+          style: TextStyle(
+            color: Color(0xFF0D1B12),
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Capture the moment", style: TextStyle(fontSize: 24, fontWeight: FontWeight.w300)),
-            const SizedBox(height: 30),
-            TextField(
-              controller: _controller,
-              maxLines: null,
-              decoration: const InputDecoration(hintText: "What went well today?", border: InputBorder.none),
-              style: const TextStyle(fontSize: 18),
+            // Tag Selector
+            const Text(
+              "CATEGORY",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.5,
+                color: Color(0xFF4C6654),
+              ),
             ),
-            const SizedBox(height: 30),
-            _buildTagSelector(),
-            const SizedBox(height: 50),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // The Mic Button
-                FloatingActionButton(
-                  onPressed: _listen,
-                  backgroundColor: _isListening ? Colors.redAccent : const Color(0xFF6B8E23),
-                  child: Icon(_isListening ? Icons.mic : Icons.mic_none, color: Colors.white),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 40,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: _tags.map((tag) {
+                  bool isSelected = _selectedTag == tag;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedTag = tag),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: isSelected ? primaryNeon : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected ? primaryNeon : Colors.black12,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          "#$tag",
+                          style: TextStyle(
+                            color: isSelected ? Colors.black : Colors.black54,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Main Input Area
+            Container(
+              decoration: BoxDecoration(
+                color: lightSurface,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _controller,
+                    maxLines: 6,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: "What happened today?",
+                      hintStyle: TextStyle(color: Colors.black26),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                  const Divider(height: 40),
+
+                  // Voice Button
+                  GestureDetector(
+                    onTap: _listen,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _isListening ? primaryNeon : darkBg,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          if (_isListening)
+                            BoxShadow(
+                              color: primaryNeon.withOpacity(0.5),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                        ],
+                      ),
+                      child: Icon(
+                        _isListening ? Icons.mic : Icons.mic_none,
+                        color: _isListening ? Colors.black : primaryNeon,
+                        size: 32,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _isListening ? "Listening..." : "Tap to speak",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _isListening ? primaryNeon : Colors.black26,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 40),
+
+            // Save Button (Matching Onboarding Continue Button)
+            ElevatedButton(
+              onPressed: _saveWin,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryNeon,
+                foregroundColor: Colors.black,
+                minimumSize: const Size(double.infinity, 70),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                // The Save Button
-                ElevatedButton(
-                  onPressed: _handleSave,
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6B8E23)),
-                  child: const Text("Save Win", style: TextStyle(color: Colors.white)),
-                ),
-              ],
+                elevation: 8,
+                shadowColor: primaryNeon.withOpacity(0.4),
+              ),
+              child: const Text(
+                "Save Win",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
             ),
           ],
         ),
